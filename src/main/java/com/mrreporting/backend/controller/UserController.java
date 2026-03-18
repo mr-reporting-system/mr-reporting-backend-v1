@@ -6,22 +6,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*") // connect to Mac without being blocked
+@CrossOrigin(origins = "http://localhost:5173")
 public class UserController {
 
     @Autowired
     private UserService userService;
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) {
-        String responseMessage = userService.loginUser(loginRequest);
+    public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest loginRequest) {
         
-        if (responseMessage.startsWith("Success")) {
-            return ResponseEntity.ok(responseMessage);
+        Map<String, String> responseData = userService.loginUser(loginRequest);
+        
+        // Check if the message says "Success"
+        if ("Success".equals(responseData.get("message"))) {
+            return ResponseEntity.ok(responseData);
         } else {
-            return ResponseEntity.badRequest().body(responseMessage);
+            return ResponseEntity.badRequest().body(responseData);
         }
     }
 }

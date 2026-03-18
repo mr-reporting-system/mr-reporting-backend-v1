@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/contacts")
-@CrossOrigin(origins = "*") // Allows Neeraj to connect from his machine
+@CrossOrigin(origins = "http://localhost:5173")
 public class ContactController {
 
     @Autowired
