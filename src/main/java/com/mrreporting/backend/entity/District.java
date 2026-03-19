@@ -21,4 +21,7 @@ public class District {
     @ManyToOne
     @JoinColumn(name = "state_id")
     private State state;
+
+    @Column(name = "is_active")
+    private Boolean isActive = false;
 }

@@ -34,6 +34,7 @@ public class DoctorService {
 
         // 3. Handle the "One-to-Many" lists (Children and Locations) 👨‍👩‍👧‍👦
         handleNestedData(doctor, dto);
+        doctor.setAadhaarNo(dto.getAadhaarNo());
 
         // 4. Save everything at once! 💾
         // (CascadeType.ALL in the Entity handles the children/locations)
@@ -53,6 +54,7 @@ public class DoctorService {
         doctor.setLicenceNo(dto.getLicenceNo());
         doctor.setEmail(dto.getEmail());
         doctor.setFrequencyVisit(dto.getFrequencyVisit());
+        doctor.setAadhaarNo(dto.getAadhaarNo()); // 👈 Added here
     }
 
     private void setDoctorRelationships(Doctor doctor, DoctorDTO dto) {
@@ -105,5 +107,9 @@ public class DoctorService {
                 doctor.addLocation(location);
             }
         }
+    }
+
+    public List<Doctor> getAllDoctors() {
+        return doctorRepository.findAll();
     }
 }

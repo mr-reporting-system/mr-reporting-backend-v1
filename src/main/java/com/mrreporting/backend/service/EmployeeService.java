@@ -1,11 +1,16 @@
 package com.mrreporting.backend.service;
 
+import com.mrreporting.backend.dto.ChangeHqDTO;
 import com.mrreporting.backend.entity.Designation;
 import com.mrreporting.backend.entity.Employee;
 import com.mrreporting.backend.entity.User;
+import com.mrreporting.backend.entity.State;
+import com.mrreporting.backend.entity.District;
 import com.mrreporting.backend.repository.DesignationRepository;
 import com.mrreporting.backend.repository.EmployeeRepository;
 import com.mrreporting.backend.repository.UserRepository;
+import com.mrreporting.backend.repository.StateRepository;
+import com.mrreporting.backend.repository.DistrictRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,7 +28,13 @@ public class EmployeeService {
     private UserRepository userRepository;
 
     @Autowired
-    private DesignationRepository designationRepository; // Added to fetch the full designation
+    private DesignationRepository designationRepository;
+
+    @Autowired
+    private StateRepository stateRepository;
+
+    @Autowired
+    private DistrictRepository districtRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -49,10 +60,7 @@ public class EmployeeService {
             Designation fullDesignation = designationRepository.findById(employee.getDesignation().getId())
                     .orElseThrow(() -> new RuntimeException("Designation not found in database!"));
 
-            // Set the full designation back to the employee so it saves correctly
             employee.setDesignation(fullDesignation);
-
-            // Convert the name to ALL CAPS and save as the user's role
             newUser.setRole(fullDesignation.getName().toUpperCase());
         }
 
@@ -61,7 +69,24 @@ public class EmployeeService {
         // 4. Link the Saved User to the Employee
         employee.setUser(savedUser);
 
-        // 5. Save the Employee Profile
+        // 5. Activate the assigned State and District 🗺️
+        if (employee.getState() != null && employee.getState().getId() != null) {
+            State state = stateRepository.findById(employee.getState().getId())
+                    .orElseThrow(() -> new RuntimeException("State not found in database!"));
+            state.setIsActive(true);
+            stateRepository.save(state);
+            employee.setState(state); // Update the employee object with the fetched state
+        }
+
+        if (employee.getDistrict() != null && employee.getDistrict().getId() != null) {
+            District district = districtRepository.findById(employee.getDistrict().getId())
+                    .orElseThrow(() -> new RuntimeException("District not found in database!"));
+            district.setIsActive(true);
+            districtRepository.save(district);
+            employee.setDistrict(district); // Update the employee object with the fetched district
+        }
+
+        // 6. Save the Employee Profile
         return employeeRepository.save(employee);
     }
 
@@ -71,5 +96,26 @@ public class EmployeeService {
 
     public List<Employee> getEmployeesByLocation(Integer stateId, Integer districtId) {
         return employeeRepository.findByStateIdAndDistrictId(stateId, districtId);
+    }
+    @Transactional // Critical for multi-step database updates
+    public Employee changeEmployeeHeadquarters(ChangeHqDTO dto) {
+
+        // Step A: Find the employee in the database
+        Employee employee = employeeRepository.findById(dto.getEmployeeId())
+                .orElseThrow(() -> new RuntimeException("Employee not found with id: " + dto.getEmployeeId()));
+
+        // Step B: Find the new State and District entities
+        State newState = stateRepository.findById(dto.getStateId())
+                .orElseThrow(() -> new RuntimeException("New state not found in database!"));
+
+        District newDistrict = districtRepository.findById(dto.getDistrictId())
+                .orElseThrow(() -> new RuntimeException("New district not found in database!"));
+
+        // Step C: Link the new location entities to the employee object
+        employee.setState(newState);
+        employee.setDistrict(newDistrict);
+
+        // Step D: Save the finalized employee profile
+        return employeeRepository.save(employee);
     }
 }

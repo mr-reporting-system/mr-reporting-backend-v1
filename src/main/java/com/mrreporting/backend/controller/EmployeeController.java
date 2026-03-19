@@ -1,6 +1,7 @@
 package com.mrreporting.backend.controller;
 
 import com.mrreporting.backend.dto.EmployeeDTO;
+import com.mrreporting.backend.dto.ChangeHqDTO; // 👈 Added import
 import com.mrreporting.backend.entity.*;
 import com.mrreporting.backend.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,9 +101,17 @@ public class EmployeeController {
     }
 
     @GetMapping("/designation/{designationId}")
-    public ResponseEntity<List<Employee>> getEmployeesByDesignation(@PathVariable Long designationId) {
+    public ResponseEntity<Map<String, Object>> getEmployeesByDesignation(@PathVariable Long designationId) {
+        // 1. Fetch the data from the service
         List<Employee> managers = employeeService.getEmployeesByDesignation(designationId);
-        return ResponseEntity.ok(managers);
+
+        // 2. Wrap it in the format the frontend expects 📦
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", managers);
+
+        // 3. Send the wrapped response back
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/filter")
@@ -117,5 +126,23 @@ public class EmployeeController {
         response.put("data", employees);
 
         return ResponseEntity.ok(response);
+    }
+
+    // 🌟 NEW: Change HQ Endpoint 🌟
+    // Neeraj will call: PUT /api/masters/employees/change-hq
+    @PutMapping("/change-hq")
+    public ResponseEntity<Map<String, Object>> changeHeadquarters(@RequestBody ChangeHqDTO changeHqDTO) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            Employee updatedEmployee = employeeService.changeEmployeeHeadquarters(changeHqDTO);
+            response.put("success", true);
+            response.put("message", "Employee headquarters changed successfully");
+            response.put("data", updatedEmployee);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Failed to change headquarters: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 }

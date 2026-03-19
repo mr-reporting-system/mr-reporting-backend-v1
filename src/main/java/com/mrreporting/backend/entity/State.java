@@ -16,4 +16,7 @@ public class State {
     @Column(name = "state_name", nullable = false, length = 100)
     @JsonProperty("state_name")
     private String stateName;
+
+    @Column(name = "is_active")
+    private Boolean isActive = false;
 }

@@ -56,6 +56,9 @@ public class Doctor {
     @Column(name = "licence_no")
     private String licenceNo;
 
+    @Column(name = "aadhaar_no")
+    private String aadhaarNo;
+
     private String email;
 
     @Column(name = "frequency_visit")

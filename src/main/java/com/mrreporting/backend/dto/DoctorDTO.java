@@ -22,6 +22,7 @@ public class DoctorDTO {
     private String gender;
     private String address;
     private String licenceNo;
+    private String aadhaarNo;
     private String email;
     private Integer frequencyVisit;
 

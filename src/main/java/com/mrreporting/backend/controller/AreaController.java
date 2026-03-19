@@ -59,4 +59,64 @@ public class AreaController {
             return ResponseEntity.internalServerError().body(errorResponse);
         }
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> updateArea(
+            @PathVariable Long id, // Captures ID from URL
+            @RequestBody AreaDTO dto // Captures new form data
+    ) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            Area updatedArea = areaService.updateArea(id, dto);
+            response.put("success", true);
+            response.put("data", updatedArea);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            // This message can be logged, but image_6.png shows generic error.
+            response.put("message", "Error updating area: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> deleteArea(
+            @PathVariable Long id // Captures ID from URL
+    ) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            areaService.deleteArea(id);
+            response.put("success", true);
+            response.put("message", "Area deleted successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            // This message solves the failure alert shown in image_7.png
+            response.put("message", "Error deleting area: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @GetMapping("/filter")
+    public ResponseEntity<Map<String, Object>> getFilteredAreas(
+            @RequestParam(required = false) Integer stateId,
+            @RequestParam(required = false) Integer districtId,
+            @RequestParam(required = false) Long employeeId) {
+        try {
+            List<Area> areas = areaService.getFilteredAreas(stateId, districtId, employeeId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", areas);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to filter areas: " + e.getMessage());
+
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
+
 }

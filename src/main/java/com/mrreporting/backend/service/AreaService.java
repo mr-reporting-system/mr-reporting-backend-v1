@@ -54,4 +54,42 @@ public class AreaService {
     public List<Area> getAllAreas() {
         return areaRepository.findAll();
     }
+
+    @Transactional
+    public Area updateArea(Long id, AreaDTO dto) {
+        // 1. Find the existing area in the database
+        Area existingArea = areaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Area not found with id: " + id));
+
+        // 2. Map direct fields (Name, Code)
+        existingArea.setAreaName(dto.getAreaName());
+        existingArea.setAreaCode(dto.getAreaCode());
+
+        // 3. Update Relationships (Look up by new IDs from DTO)
+        existingArea.setState(stateRepository.findById(dto.getStateId())
+                .orElseThrow(() -> new RuntimeException("State not found")));
+
+        existingArea.setDistrict(districtRepository.findById(dto.getDistrictId())
+                .orElseThrow(() -> new RuntimeException("District not found")));
+
+        existingArea.setEmployee(employeeRepository.findById(dto.getEmployeeId())
+                .orElseThrow(() -> new RuntimeException("Employee not found")));
+
+        // 4. Save the updated entity
+        return areaRepository.save(existingArea);
+    }
+
+    public void deleteArea(Long id) {
+        // Simple check to ensure it exists before trying to delete
+        if (!areaRepository.existsById(id)) {
+            throw new RuntimeException("Area not found with id: " + id);
+        }
+
+        // Standard JPA delete call
+        areaRepository.deleteById(id);
+    }
+
+    public List<Area> getFilteredAreas(Integer stateId, Integer districtId, Long employeeId) {
+        return areaRepository.findFilteredAreas(stateId, districtId, employeeId);
+    }
 }
