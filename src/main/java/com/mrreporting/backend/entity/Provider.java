@@ -14,7 +14,7 @@ public class Provider {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // --- Relationships (The "Where" and "Who") 🗺️ ---
+    // --- Relationships ---
     @ManyToOne
     @JoinColumn(name = "state_id", nullable = false)
     private State state;
@@ -31,9 +31,9 @@ public class Provider {
     @JoinColumn(name = "area_id", nullable = false)
     private Area area;
 
-    // --- Core Provider Details ✍️ ---
+    // --- Core Provider Details ---
     @Column(nullable = false)
-    private String type; // 'Chemist' or 'Stockist'
+    private String type;
 
     @Column(name = "provider_code")
     private String providerCode;
@@ -46,7 +46,7 @@ public class Provider {
     @Column(name = "aadhaar_no")
     private String aadhaarNo;
 
-    // --- Additional Info (Other Info Section) 📋 ---
+    // --- Additional Info ---
     @Column(name = "owner_name")
     private String ownerName;
 
@@ -76,7 +76,14 @@ public class Provider {
 
     private String category;
 
-    // --- Audit Trail 🕰️ ---
+    // --- 🚦 NEW: Approval Tracking Fields ---
+    @Column(name = "is_active")
+    private Boolean isActive = false; // Pending by default
+
+    @Column(name = "request_status")
+    private String requestStatus = "ADDITION"; // Addition by default
+
+    // --- Audit Trail ---
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

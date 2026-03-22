@@ -2,7 +2,6 @@ package com.mrreporting.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +15,7 @@ public class Doctor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // --- Relationships (The "Where" and "Who") 🗺️ ---
+    // --- Relationships ---
     @ManyToOne
     @JoinColumn(name = "state_id", nullable = false)
     private State state;
@@ -33,7 +32,7 @@ public class Doctor {
     @JoinColumn(name = "area_id", nullable = false)
     private Area area;
 
-    // --- Core Doctor Details ✍️ ---
+    // --- Core Doctor Details ---
     @Column(name = "doctor_code")
     private String doctorCode;
 
@@ -64,17 +63,21 @@ public class Doctor {
     @Column(name = "frequency_visit")
     private Integer frequencyVisit = 0;
 
-    // --- Family & Visit Data (One-to-Many) 👨‍👩‍👧‍👦 ---
+    // --- 🚦 NEW: Approval Tracking Fields ---
+    @Column(name = "is_active")
+    private Boolean isActive = false; // Defaults to false for new requests
 
-    // 1. List of Children
+    @Column(name = "request_status")
+    private String requestStatus = "ADDITION"; // Defaults to Addition
+
+    // --- Family & Visit Data ---
     @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DoctorChild> children = new ArrayList<>();
 
-    // 2. List of Visit Locations (Cities/Slots)
     @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DoctorVisitLocation> locations = new ArrayList<>();
 
-    // --- Audit Trail 🕰️ ---
+    // --- Audit Trail ---
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -83,7 +86,7 @@ public class Doctor {
         this.createdAt = LocalDateTime.now();
     }
 
-    // --- Helper Methods to sync both sides ---
+    // Helper Methods
     public void addChild(DoctorChild child) {
         children.add(child);
         child.setDoctor(this);

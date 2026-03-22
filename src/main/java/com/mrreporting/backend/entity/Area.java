@@ -49,6 +49,12 @@ public class Area {
     @Column(name = "total_stockist")
     private Integer totalStockist = 0;
 
+    @Column(name = "is_active")
+    private Boolean isActive = false;
+
+    @Column(name = "request_status")
+    private String requestStatus = "ADDITION";
+
     // --- Audit Trail 🕰️ ---
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

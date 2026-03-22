@@ -25,19 +25,16 @@ public class DoctorService {
 
     @Transactional
     public Doctor saveDoctor(DoctorDTO dto) {
-        // 1. Create the main Doctor entity and map basic fields
         Doctor doctor = new Doctor();
         mapBasicDetails(doctor, dto);
 
-        // 2. Look up and set the relational objects (State, District, etc.) 🗺️
+        // New doctors are pending approval
+        doctor.setIsActive(false);
+        doctor.setRequestStatus("ADDITION");
+
         setDoctorRelationships(doctor, dto);
-
-        // 3. Handle the "One-to-Many" lists (Children and Locations) 👨‍👩‍👧‍👦
         handleNestedData(doctor, dto);
-        doctor.setAadhaarNo(dto.getAadhaarNo());
 
-        // 4. Save everything at once! 💾
-        // (CascadeType.ALL in the Entity handles the children/locations)
         return doctorRepository.save(doctor);
     }
 
@@ -54,7 +51,7 @@ public class DoctorService {
         doctor.setLicenceNo(dto.getLicenceNo());
         doctor.setEmail(dto.getEmail());
         doctor.setFrequencyVisit(dto.getFrequencyVisit());
-        doctor.setAadhaarNo(dto.getAadhaarNo()); // 👈 Added here
+        doctor.setAadhaarNo(dto.getAadhaarNo());
     }
 
     private void setDoctorRelationships(Doctor doctor, DoctorDTO dto) {
@@ -72,44 +69,70 @@ public class DoctorService {
     }
 
     private void handleNestedData(Doctor doctor, DoctorDTO dto) {
-        // 1. Process Children 🧒
         if (dto.getChildren() != null) {
             for (DoctorChildDTO childDto : dto.getChildren()) {
                 DoctorChild child = new DoctorChild();
                 child.setChildName(childDto.getChildName());
                 child.setChildAge(childDto.getChildAge());
-
-                // This helper method sets the bidirectional link!
                 doctor.addChild(child);
             }
         }
 
-        // 2. Process Visit Locations & Time Slots 📍🕒
         if (dto.getLocations() != null) {
             for (DoctorVisitLocationDTO locDto : dto.getLocations()) {
                 DoctorVisitLocation location = new DoctorVisitLocation();
                 location.setCity(locDto.getCity());
                 location.setSessionType(locDto.getSessionType());
 
-                // Process the nested slots inside this specific location
                 if (locDto.getSlots() != null) {
                     for (DoctorVisitSlotDTO slotDto : locDto.getSlots()) {
                         DoctorVisitSlot slot = new DoctorVisitSlot();
                         slot.setFromTime(slotDto.getFromTime());
                         slot.setToTime(slotDto.getToTime());
-
-                        // Linking the slot to the location
                         location.addSlot(slot);
                     }
                 }
-
-                // Linking the location to the doctor
                 doctor.addLocation(location);
             }
         }
     }
 
-    public List<Doctor> getAllDoctors() {
-        return doctorRepository.findAll();
+    // Only returns "Approved" doctors for general use
+    public List<Doctor> getAllActiveDoctors() {
+        return doctorRepository.findByIsActiveTrue();
+    }
+
+    // Only returns "Approved" doctors for a specific area
+    public List<Doctor> getDoctorsByArea(Long areaId) {
+        return doctorRepository.findByAreaIdAndIsActiveTrue(areaId);
+    }
+
+    // Instead of deleting, flag it for the Approval Master
+    @Transactional
+    public void requestDoctorDeletion(Long id) {
+        Doctor doctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Doctor not found with id: " + id));
+
+        // Stays active in the field but moves to the "Deletion Requests" table for admin
+        doctor.setRequestStatus("DELETION");
+        doctorRepository.save(doctor);
+    }
+
+    @Transactional
+    public void transferDoctors(ProviderTransferDTO dto) {
+        Employee newEmployee = employeeRepository.findById(dto.getNewEmployeeId())
+                .orElseThrow(() -> new RuntimeException("New Employee not found"));
+
+        Area newArea = areaRepository.findById(dto.getNewAreaId())
+                .orElseThrow(() -> new RuntimeException("New Area not found"));
+
+        List<Doctor> doctorsToTransfer = doctorRepository.findAllById(dto.getProviderIds());
+
+        for (Doctor doctor : doctorsToTransfer) {
+            doctor.setEmployee(newEmployee);
+            doctor.setArea(newArea);
+        }
+
+        doctorRepository.saveAll(doctorsToTransfer);
     }
 }

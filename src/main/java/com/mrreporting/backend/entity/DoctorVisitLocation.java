@@ -1,5 +1,6 @@
 package com.mrreporting.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ public class DoctorVisitLocation {
     // Link back to the parent Doctor
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "doctor_id")
+    @JsonIgnore
     private Doctor doctor;
 
     // Link down to the multiple Time Slots 🕒

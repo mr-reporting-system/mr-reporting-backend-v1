@@ -1,5 +1,6 @@
 package com.mrreporting.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -21,5 +22,6 @@ public class DoctorChild {
     // We use @ManyToOne to link back to the parent Doctor
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "doctor_id")
+    @JsonIgnore
     private Doctor doctor;
 }

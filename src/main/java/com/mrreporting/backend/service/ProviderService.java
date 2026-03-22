@@ -1,6 +1,7 @@
 package com.mrreporting.backend.service;
 
 import com.mrreporting.backend.dto.ProviderDTO;
+import com.mrreporting.backend.dto.ProviderTransferDTO;
 import com.mrreporting.backend.entity.*;
 import com.mrreporting.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,14 +32,14 @@ public class ProviderService {
     public Provider saveProvider(ProviderDTO dto) {
         Provider provider = new Provider();
 
-        // 1. Map Basic Fields ✍️
+        // 1. Map Basic Fields ✍
         provider.setType(dto.getType());
         provider.setProviderCode(dto.getProviderCode());
         provider.setProviderName(dto.getProviderName());
         provider.setPhone(dto.getPhone());
         provider.setAadhaarNo(dto.getAadhaarNo());
 
-        // 2. Map "Other Info" Fields 📋
+        // 2. Map "Other Info" Fields
         provider.setOwnerName(dto.getOwnerName());
         provider.setOwnerDob(dto.getOwnerDob());
         provider.setOwnerDoa(dto.getOwnerDoa());
@@ -51,7 +52,11 @@ public class ProviderService {
         provider.setLicenceNo(dto.getLicenceNo());
         provider.setCategory(dto.getCategory());
 
-        // 3. Set Relationships (Look up by IDs) 🗺️
+        // New providers are pending approval
+        provider.setIsActive(false);
+        provider.setRequestStatus("ADDITION");
+
+        // 3. Set Relationships 🗺
         provider.setState(stateRepository.findById(dto.getStateId())
                 .orElseThrow(() -> new RuntimeException("State not found")));
 
@@ -64,11 +69,47 @@ public class ProviderService {
         provider.setArea(areaRepository.findById(dto.getAreaId())
                 .orElseThrow(() -> new RuntimeException("Area not found")));
 
-        // 4. Save to Database 💾
         return providerRepository.save(provider);
     }
 
-    public List<Provider> getAllProviders() {
-        return providerRepository.findAll();
+    // returns "Approved" providers
+    public List<Provider> getAllActiveProviders() {
+        return providerRepository.findAll().stream()
+                .filter(Provider::getIsActive)
+                .toList();
+    }
+
+    // Filtered for active entries
+    public List<Provider> getProvidersByAreaAndType(Long areaId, String type) {
+        return providerRepository.findByAreaIdAndTypeAndIsActiveTrue(areaId, type);
+    }
+
+    // Flag it for the Approval Master instead of hard delete
+    @Transactional
+    public void requestProviderDeletion(Long id) {
+        Provider provider = providerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Provider not found with id: " + id));
+
+        // Stays visible in standard lists but flags for the admin deletion table
+        provider.setRequestStatus("DELETION");
+        providerRepository.save(provider);
+    }
+
+    @Transactional
+    public void transferProviders(ProviderTransferDTO dto) {
+        Employee newEmployee = employeeRepository.findById(dto.getNewEmployeeId())
+                .orElseThrow(() -> new RuntimeException("New Employee not found"));
+
+        Area newArea = areaRepository.findById(dto.getNewAreaId())
+                .orElseThrow(() -> new RuntimeException("New Area not found"));
+
+        List<Provider> providersToTransfer = providerRepository.findAllById(dto.getProviderIds());
+
+        for (Provider provider : providersToTransfer) {
+            provider.setEmployee(newEmployee);
+            provider.setArea(newArea);
+        }
+
+        providerRepository.saveAll(providersToTransfer);
     }
 }

@@ -30,6 +30,7 @@ public class SecurityConfig {
                                 "/api/users/**",
                                 "/api/contacts/submit",
                                 "/api/masters/**",
+                                "/api/approvals/**",
                                 "/error"
                         ).permitAll()
                         .anyRequest().authenticated()

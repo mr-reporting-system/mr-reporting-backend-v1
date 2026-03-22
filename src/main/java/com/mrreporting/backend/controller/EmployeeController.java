@@ -1,7 +1,8 @@
 package com.mrreporting.backend.controller;
 
 import com.mrreporting.backend.dto.EmployeeDTO;
-import com.mrreporting.backend.dto.ChangeHqDTO; // 👈 Added import
+import com.mrreporting.backend.dto.ChangeHqDTO;
+import com.mrreporting.backend.dto.MapHierarchyDTO;
 import com.mrreporting.backend.entity.*;
 import com.mrreporting.backend.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,11 +34,10 @@ public class EmployeeController {
     }
 
     // GET /api/masters/employees
+    // dynamically fetches all ASM, RSM, ZSM, and NSM roles
     @GetMapping
     public ResponseEntity<Map<String, Object>> getEligibleManagers() {
-        // Assuming ID 1 or 2 is your Manager designation. Adjust this ID to match your DB!
-        Long managerDesignationId = 2L;
-        List<Employee> managers = employeeService.getEmployeesByDesignation(managerDesignationId);
+        List<Employee> managers = employeeService.getAllReportingManagers();
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
@@ -105,7 +105,7 @@ public class EmployeeController {
         // 1. Fetch the data from the service
         List<Employee> managers = employeeService.getEmployeesByDesignation(designationId);
 
-        // 2. Wrap it in the format the frontend expects 📦
+        // 2. Wrap it in the format the frontend expects
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("data", managers);
@@ -128,8 +128,7 @@ public class EmployeeController {
         return ResponseEntity.ok(response);
     }
 
-    // 🌟 NEW: Change HQ Endpoint 🌟
-    // Neeraj will call: PUT /api/masters/employees/change-hq
+    // PUT /api/masters/employees/change-hq
     @PutMapping("/change-hq")
     public ResponseEntity<Map<String, Object>> changeHeadquarters(@RequestBody ChangeHqDTO changeHqDTO) {
         Map<String, Object> response = new HashMap<>();
@@ -145,4 +144,132 @@ public class EmployeeController {
             return ResponseEntity.badRequest().body(response);
         }
     }
+
+    @GetMapping("/by-states")
+    public ResponseEntity<Map<String, Object>> getEmployeesByStates(
+            @RequestParam List<Integer> stateIds) {
+        try {
+            List<Employee> employees = employeeService.getEmployeesByStates(stateIds);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", employees);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to fetch employees by states: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
+
+    // Endpoint for Left Table
+    @GetMapping("/hierarchy/employees")
+    public ResponseEntity<Map<String, Object>> getHierarchyEmployees(
+            @RequestParam List<Integer> stateIds,
+            @RequestParam Long designationId) {
+
+        List<Employee> employees = employeeService.getEmployeesForMapping(stateIds, designationId);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", employees);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // Endpoint for Right Table
+    @GetMapping("/hierarchy/managers")
+    public ResponseEntity<Map<String, Object>> getHierarchyManagers(
+            @RequestParam List<Integer> stateIds,
+            @RequestParam Integer level) {
+
+        List<Employee> managers = employeeService.getHigherLevelManagers(stateIds, level);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", managers);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // Endpoint for "Map Hierarchy" Save Button
+    @PutMapping("/hierarchy/map")
+    public ResponseEntity<Map<String, Object>> mapHierarchy(@RequestBody MapHierarchyDTO dto) {
+        try {
+            employeeService.mapHierarchy(dto.getEmployeeIds(), dto.getManagerId());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Hierarchy updated successfully");
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Mapping failed: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @PostMapping("/hierarchy/mrs-for-deletion")
+    public ResponseEntity<Map<String, Object>> getMRsForDeletion(@RequestBody Map<String, List<Long>> payload) {
+        try {
+            List<Long> employeeIds = payload.get("employeeIds");
+            List<Employee> mrs = employeeService.getMRsForHierarchyDeletion(employeeIds);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", mrs);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to fetch MRs: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @PutMapping("/hierarchy/remove")
+    public ResponseEntity<Map<String, Object>> removeHierarchy(@RequestBody Map<String, List<Long>> payload) {
+        try {
+            List<Long> employeeIds = payload.get("employeeIds");
+            employeeService.removeHierarchyForMRs(employeeIds);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Hierarchy removed successfully for selected employees.");
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to remove hierarchy: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @GetMapping("/filter-multi")
+    public ResponseEntity<Map<String, Object>> getEmployeesByMultiFilter(
+            @RequestParam List<Integer> stateIds,
+            @RequestParam List<Long> designationIds) {
+        try {
+            List<Employee> employees = employeeService.getEmployeesByMultiFilter(stateIds, designationIds);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", employees);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to fetch employees: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+
 }

@@ -55,13 +55,24 @@ public class EmployeeService {
         newUser.setEmail(employee.getEmail());
         newUser.setPassword(passwordEncoder.encode(password));
 
-        // 3. Fetch the full Designation to avoid NullPointerException and set the role to UPPERCASE
+        // 3. Fetch Designation and Apply Role Mapping Logic
         if (employee.getDesignation() != null && employee.getDesignation().getId() != null) {
             Designation fullDesignation = designationRepository.findById(employee.getDesignation().getId())
                     .orElseThrow(() -> new RuntimeException("Designation not found in database!"));
 
             employee.setDesignation(fullDesignation);
-            newUser.setRole(fullDesignation.getName().toUpperCase());
+
+            String designationName = fullDesignation.getName().toUpperCase();
+            List<String> managerRoles = List.of("ASM", "RSM", "ZSM", "NSM");
+
+            // Map the specific designation to the overarching User Role
+            if (managerRoles.contains(designationName)) {
+                newUser.setRole("MANAGER");
+            } else if (designationName.equals("MR") || designationName.equals("ADMIN")) {
+                newUser.setRole(designationName);
+            } else {
+                newUser.setRole(designationName); // Fallback safety
+            }
         }
 
         User savedUser = userRepository.save(newUser);
@@ -69,7 +80,7 @@ public class EmployeeService {
         // 4. Link the Saved User to the Employee
         employee.setUser(savedUser);
 
-        // 5. Activate the assigned State and District 🗺️
+        // 5. Activate the assigned State and District
         if (employee.getState() != null && employee.getState().getId() != null) {
             State state = stateRepository.findById(employee.getState().getId())
                     .orElseThrow(() -> new RuntimeException("State not found in database!"));
@@ -97,6 +108,7 @@ public class EmployeeService {
     public List<Employee> getEmployeesByLocation(Integer stateId, Integer districtId) {
         return employeeRepository.findByStateIdAndDistrictId(stateId, districtId);
     }
+
     @Transactional // Critical for multi-step database updates
     public Employee changeEmployeeHeadquarters(ChangeHqDTO dto) {
 
@@ -117,5 +129,66 @@ public class EmployeeService {
 
         // Step D: Save the finalized employee profile
         return employeeRepository.save(employee);
+    }
+
+    public List<Employee> getEmployeesByStates(List<Integer> stateIds) {
+        return employeeRepository.findByStateIdIn(stateIds);
+    }
+
+    public List<Employee> getAllReportingManagers() {
+        List<String> managerRoles = List.of("ASM", "RSM", "ZSM", "NSM");
+        return employeeRepository.findByDesignationNameIn(managerRoles);
+    }
+
+    // Fetch left table employees
+    public List<Employee> getEmployeesForMapping(List<Integer> stateIds, Long designationId) {
+        return employeeRepository.findByStateIdInAndDesignationId(stateIds, designationId);
+    }
+
+    // Fetch right table managers (strictly higher level)
+    public List<Employee> getHigherLevelManagers(List<Integer> stateIds, Integer currentLevel) {
+        return employeeRepository.findByStateIdInAndDesignationLevelGreaterThan(stateIds, currentLevel);
+    }
+
+    // Bulk update reporting managers
+    @Transactional
+    public void mapHierarchy(List<Long> employeeIds, Long newManagerId) {
+        Employee newManager = employeeRepository.findById(newManagerId)
+                .orElseThrow(() -> new RuntimeException("New manager not found in database!"));
+
+        List<Employee> employees = employeeRepository.findAllById(employeeIds);
+        for (Employee emp : employees) {
+            emp.setReportingManager(newManager);
+        }
+
+        employeeRepository.saveAll(employees);
+    }
+
+    public List<Employee> getMRsForHierarchyDeletion(List<Long> employeeIds) {
+        if (employeeIds == null || employeeIds.isEmpty()) {
+            return List.of(); // Return an empty list safely if nothing was selected
+        }
+        return employeeRepository.findMRsByEmployeeOrManagerIds(employeeIds);
+    }
+
+    @Transactional
+    public void removeHierarchyForMRs(List<Long> employeeIds) {
+        if (employeeIds == null || employeeIds.isEmpty()) {
+            return; // Safety check
+        }
+
+        List<Employee> employees = employeeRepository.findAllById(employeeIds);
+        for (Employee emp : employees) {
+            emp.setReportingManager(null);
+        }
+
+        employeeRepository.saveAll(employees);
+    }
+
+    public List<Employee> getEmployeesByMultiFilter(List<Integer> stateIds, List<Long> designationIds) {
+        if (stateIds == null || stateIds.isEmpty() || designationIds == null || designationIds.isEmpty()) {
+            return List.of();
+        }
+        return employeeRepository.findByStateIdInAndDesignationIdIn(stateIds, designationIds);
     }
 }

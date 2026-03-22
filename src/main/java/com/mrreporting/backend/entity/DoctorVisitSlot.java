@@ -1,5 +1,6 @@
 package com.mrreporting.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalTime;
@@ -22,5 +23,6 @@ public class DoctorVisitSlot {
     // This links to the Visit Location, not the Doctor directly
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "location_id")
+    @JsonIgnore
     private DoctorVisitLocation location;
 }

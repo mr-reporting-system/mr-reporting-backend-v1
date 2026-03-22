@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-
 @Service
 public class DesignationService {
 
@@ -20,7 +19,24 @@ public class DesignationService {
     }
 
     public List<Designation> getAllDesignations() {
-        // Only fetch these specific roles
-        return designationRepository.findByNameIn(List.of("Manager", "MR"));
+        // 🌟 FIXED: Use the built-in method to fetch absolutely everything!
+        return designationRepository.findAll();
+    }
+
+    public Designation updateDesignation(Long id, Designation updatedDetails) {
+        Designation existingDesignation = designationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Designation not found with id: " + id));
+
+        // Update the fields
+        existingDesignation.setName(updatedDetails.getName());
+        existingDesignation.setLevel(updatedDetails.getLevel());
+        existingDesignation.setFullForm(updatedDetails.getFullForm());
+
+        // Save and return the updated entity
+        return designationRepository.save(existingDesignation);
+    }
+
+    public List<Designation> getDesignationsForHierarchy() {
+        return designationRepository.findDesignationsBelowTopLevel();
     }
 }
