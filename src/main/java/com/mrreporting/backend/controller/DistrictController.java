@@ -18,9 +18,11 @@ public class DistrictController {
     @Autowired
     private DistrictService districtService;
 
-    // --- Filtered Endpoint (For Area/Doctor/Chemist Creation) ---
+    // returns active districts for a single state, used in most master creation forms
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getActiveDistrictsByState(@RequestParam("stateId") Integer stateId) {
+    public ResponseEntity<Map<String, Object>> getActiveDistrictsByState(
+            @RequestParam("stateId") Integer stateId) {
+
         List<District> districts = districtService.getActiveDistrictsByState(stateId);
 
         Map<String, Object> response = new HashMap<>();
@@ -30,10 +32,12 @@ public class DistrictController {
         return ResponseEntity.ok(response);
     }
 
-    // --- Global Endpoint 👈 (For Employee Creation) ---
+    // returns all districts for a single state, used in employee creation form
     @GetMapping("/all")
-    public ResponseEntity<Map<String, Object>> getAllDistrictsByState(@RequestParam("stateId") Integer stateId) {
-        List<District> districts = districtService.getAllDistrictsByState(stateId); // Calls the all-inclusive service method
+    public ResponseEntity<Map<String, Object>> getAllDistrictsByState(
+            @RequestParam("stateId") Integer stateId) {
+
+        List<District> districts = districtService.getAllDistrictsByState(stateId);
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
@@ -42,43 +46,66 @@ public class DistrictController {
         return ResponseEntity.ok(response);
     }
 
+    // returns active districts for multiple states, used in CRM and tour program filters
+    @GetMapping("/by-states")
+    public ResponseEntity<Map<String, Object>> getActiveDistrictsByStates(
+            @RequestParam List<Integer> stateIds) {
+
+        Map<String, Object> response = new HashMap<>();
+        try {
+            List<District> districts = districtService.getActiveDistrictsByStates(stateIds);
+            response.put("success", true);
+            response.put("data", districts);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Failed to fetch districts: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
     @PutMapping("/status")
-    public ResponseEntity<Map<String, Object>> updateDistrictStatus(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<Map<String, Object>> updateDistrictStatus(
+            @RequestBody Map<String, Object> payload) {
+
+        Map<String, Object> response = new HashMap<>();
         try {
             List<Integer> districtIds = (List<Integer>) payload.get("districtIds");
             boolean isActive = (boolean) payload.get("isActive");
 
             districtService.updateDistrictStatus(districtIds, isActive);
 
-            Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "District statuses updated successfully");
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("message", "Failed to update districts: " + e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
+            response.put("success", false);
+            response.put("message", "Failed to update districts: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> createDistrict(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<Map<String, Object>> createDistrict(
+            @RequestBody Map<String, Object> payload) {
+
+        Map<String, Object> response = new HashMap<>();
         try {
             Integer stateId = (Integer) payload.get("stateId");
             String districtName = (String) payload.get("districtName");
 
             District savedDistrict = districtService.createDistrict(stateId, districtName);
 
-            Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("data", savedDistrict);
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("message", "Failed to create district: " + e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
+            response.put("success", false);
+            response.put("message", "Failed to create district: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
@@ -90,6 +117,7 @@ public class DistrictController {
             response.put("success", true);
             response.put("message", "District deleted successfully");
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Failed to delete district: " + e.getMessage());

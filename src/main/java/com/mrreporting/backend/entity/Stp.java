@@ -44,6 +44,13 @@ public class Stp {
     @Column(name = "frequency_visit")
     private Integer frequencyVisit;
 
+    @Column(name = "is_active")
+    private Boolean isActive = false;
+
+    // Possible values: "PENDING" | "APPROVED" | "DELETED"
+    @Column(name = "request_status")
+    private String requestStatus = "PENDING";
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

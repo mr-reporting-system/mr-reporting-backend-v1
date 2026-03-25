@@ -70,6 +70,13 @@ public class Doctor {
     @Column(name = "request_status")
     private String requestStatus = "ADDITION"; // Defaults to Addition
 
+    // --- 🔗 CRM Tracking Fields ---
+    @Column(name = "crm_status")
+    private String crmStatus = "Not Linked"; // "Not Linked" | "Linked"
+
+    @Column(name = "sponsorship_status")
+    private String sponsorshipStatus = "Not Submitted"; // "Not Submitted" | "Approved" | "Not Approved"
+
     // --- Family & Visit Data ---
     @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DoctorChild> children = new ArrayList<>();

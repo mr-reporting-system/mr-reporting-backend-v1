@@ -36,4 +36,16 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
             Boolean isActive,
             String requestStatus
     );
+
+    // CRM Doctor Mapping Queries (NEW)
+
+    List<Doctor> findByEmployeeIdAndIsActiveTrueAndCrmStatus(
+            Long employeeId,
+            String crmStatus
+    );
+
+    long countByEmployeeIdAndIsActiveTrueAndCrmStatus(
+            Long employeeId,
+            String crmStatus
+    );
 }

@@ -24,6 +24,9 @@ public class ApprovalService {
     @Autowired
     private ProviderRepository providerRepository;
 
+    @Autowired
+    private StpRepository stpRepository;
+
     public Map<String, Object> getDashboardCounts() {
         Map<String, Object> counts = new HashMap<>();
 
@@ -41,8 +44,12 @@ public class ApprovalService {
         deletions.put("doctor", doctorRepository.countByIsActiveFalseAndRequestStatus("DELETION"));
         deletions.put("provider", providerRepository.countByIsActiveFalseAndRequestStatus("DELETION"));
 
+        Map<String, Long> stp = new HashMap<>();
+        stp.put("pending", stpRepository.countByIsActiveFalseAndRequestStatus("PENDING"));
+
         counts.put("additions", additions);
         counts.put("deletions", deletions);
+        counts.put("stp", stp);
 
         return counts;
     }

@@ -84,5 +84,6 @@ public class Employee {
     @Column(name = "user_code", unique = true, length = 50)
     private String userCode;
 
-    // Getters and Setters omitted for brevity
+    @Column(name = "is_active")
+    private Boolean isActive = true;
 }

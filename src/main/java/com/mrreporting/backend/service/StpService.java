@@ -34,18 +34,20 @@ public class StpService {
         stp.setFrc(dto.getFrc());
         stp.setDistance(dto.getDistance());
         stp.setFrequencyVisit(dto.getFrequencyVisit());
+        stp.setIsActive(false);
+        stp.setRequestStatus("PENDING");
 
         return stpRepository.save(stp);
     }
 
+    // Only return approved STPs for an employee (used by MR's own view)
     public List<Stp> getStpsByEmployeeId(Long employeeId) {
-        return stpRepository.findByEmployeeId(employeeId);
+        return stpRepository.findByEmployeeIdAndIsActiveTrue(employeeId);
     }
 
     @Transactional
     public void deleteStps(List<Long> stpIds) {
         if (stpIds != null && !stpIds.isEmpty()) {
-            // 🌟 Using the built-in JPA method to delete multiple records at once
             stpRepository.deleteAllById(stpIds);
         }
     }
@@ -55,7 +57,6 @@ public class StpService {
         Stp existingStp = stpRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("STP not found"));
 
-        // Update relationships
         existingStp.setDesignation(designationRepository.findById(dto.getDesignationId())
                 .orElseThrow(() -> new RuntimeException("Designation not found")));
         existingStp.setEmployee(employeeRepository.findById(dto.getEmployeeId())
@@ -65,7 +66,6 @@ public class StpService {
         existingStp.setToArea(areaRepository.findById(dto.getToAreaId())
                 .orElseThrow(() -> new RuntimeException("To Area not found")));
 
-        // Update standard fields
         existingStp.setAreaType(dto.getAreaType());
         existingStp.setFrc(dto.getFrc());
         existingStp.setDistance(dto.getDistance());

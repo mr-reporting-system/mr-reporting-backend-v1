@@ -191,4 +191,26 @@ public class EmployeeService {
         }
         return employeeRepository.findByStateIdInAndDesignationIdIn(stateIds, designationIds);
     }
+
+    // The CRM filter lets the user narrow down to specific districts
+
+    public List<Employee> getEmployeesByDistrictAndDesignation(
+            List<Integer> districtIds,
+            List<Long> designationIds) {
+
+        if (districtIds == null || districtIds.isEmpty()
+                || designationIds == null || designationIds.isEmpty()) {
+            return List.of();
+        }
+        return employeeRepository.findByDistrictIdInAndDesignationIdIn(districtIds, designationIds);
+    }
+
+    // fetches employees matching a designation and their active/inactive status.
+    // used for the employee dropdown in the hierarchical tour program filter.
+    public List<Employee> getEmployeesByDesignationAndStatus(Long designationId, Boolean isActive) {
+        if (designationId == null) {
+            return List.of();
+        }
+        return employeeRepository.findByDesignationIdAndIsActive(designationId, isActive);
+    }
 }

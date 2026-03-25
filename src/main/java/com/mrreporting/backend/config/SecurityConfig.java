@@ -31,6 +31,7 @@ public class SecurityConfig {
                                 "/api/contacts/submit",
                                 "/api/masters/**",
                                 "/api/approvals/**",
+                                "/api/expense/**",
                                 "/error"
                         ).permitAll()
                         .anyRequest().authenticated()
@@ -42,10 +43,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        // FIX: Changed from setAllowedOrigins to setAllowedOriginPatterns to allow Ngrok
         configuration.setAllowedOriginPatterns(List.of("*"));
-
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

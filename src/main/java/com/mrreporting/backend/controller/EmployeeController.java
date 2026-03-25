@@ -4,6 +4,7 @@ import com.mrreporting.backend.dto.EmployeeDTO;
 import com.mrreporting.backend.dto.ChangeHqDTO;
 import com.mrreporting.backend.dto.MapHierarchyDTO;
 import com.mrreporting.backend.entity.*;
+import com.mrreporting.backend.service.DistrictService;
 import com.mrreporting.backend.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -270,6 +271,37 @@ public class EmployeeController {
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
+
+    // Returns employees matching the selected districts AND designations.
+    @GetMapping("/crm-filter")
+    public ResponseEntity<Map<String, Object>> getEmployeesForCrmMapping(
+            @RequestParam List<Integer> districtIds,
+            @RequestParam(required = false) List<Long> designationIds) {
+        try {
+            // if no designation selected yet, return empty list instead of throwing 400
+            if (designationIds == null || designationIds.isEmpty()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("data", List.of());
+                return ResponseEntity.ok(response);
+            }
+
+            List<Employee> employees =
+                    employeeService.getEmployeesByDistrictAndDesignation(districtIds, designationIds);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", employees);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to fetch employees: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
+
 
 
 }
