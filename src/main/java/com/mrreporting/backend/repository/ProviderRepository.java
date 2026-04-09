@@ -6,7 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ProviderRepository extends JpaRepository<Provider, Long> {
@@ -19,19 +21,14 @@ public interface ProviderRepository extends JpaRepository<Provider, Long> {
     List<ApprovalSummaryDTO> getProviderSummary(@Param("isActive") Boolean isActive,
                                                 @Param("status") String status);
 
-    //  Only approved providers by type
     List<Provider> findByTypeAndIsActiveTrue(String type);
 
-    //  Approved providers in an area
     List<Provider> findByAreaIdAndIsActiveTrue(Long areaId);
 
-    //  Approved providers by area and type (Chemist vs Stockist)
     List<Provider> findByAreaIdAndTypeAndIsActiveTrue(Long areaId, String type);
 
-    // Counts pending Provider additions
     long countByIsActiveFalseAndRequestStatus(String requestStatus);
 
-    // Counts pending Provider deletions
     long countByIsActiveTrueAndRequestStatus(String requestStatus);
 
     List<Provider> findByEmployeeIdAndIsActiveAndRequestStatus(
@@ -39,4 +36,31 @@ public interface ProviderRepository extends JpaRepository<Provider, Long> {
             Boolean isActive,
             String requestStatus
     );
+
+    List<Provider> findByEmployeeIdAndTypeIgnoreCaseAndIsActiveTrueOrderByProviderNameAsc(
+            Long employeeId,
+            String type
+    );
+
+    Optional<Provider> findByIdAndTypeIgnoreCaseAndIsActiveTrue(Long id, String type);
+
+    List<Provider> findByEmployeeIdAndStateIdAndDistrictIdAndTypeIgnoreCaseAndIsActiveTrueOrderByProviderNameAsc(
+            Long employeeId,
+            Integer stateId,
+            Integer districtId,
+            String type
+    );
+
+    List<Provider> findByEmployeeIdAndIsActiveTrueOrderByProviderNameAsc(Long employeeId);
+
+    Optional<Provider> findByIdAndIsActiveTrue(Long id);
+
+    List<Provider> findByEmployeeIdAndStateIdAndDistrictIdAndIsActiveTrueOrderByProviderNameAsc(
+            Long employeeId,
+            Integer stateId,
+            Integer districtId
+    );
+
+    List<Provider> findByEmployeeIdInAndIsActiveTrueOrderByProviderNameAsc(List<Long> employeeIds);
+
 }

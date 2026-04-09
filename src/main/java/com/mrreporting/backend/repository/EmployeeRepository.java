@@ -42,4 +42,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
             Long designationId,
             Boolean isActive
     );
+
+    List<Employee> findByDistrictIdInAndIsActiveTrueOrderByNameAsc(List<Integer> districtIds);
+
 }

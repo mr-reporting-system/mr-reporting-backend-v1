@@ -3,6 +3,7 @@ package com.mrreporting.backend.controller;
 import com.mrreporting.backend.dto.EmployeeDTO;
 import com.mrreporting.backend.dto.ChangeHqDTO;
 import com.mrreporting.backend.dto.MapHierarchyDTO;
+import com.mrreporting.backend.dto.DropdownOptionDTO;
 import com.mrreporting.backend.entity.*;
 import com.mrreporting.backend.service.DistrictService;
 import com.mrreporting.backend.service.EmployeeService;
@@ -301,6 +302,28 @@ public class EmployeeController {
             return ResponseEntity.internalServerError().body(errorResponse);
         }
     }
+
+    @GetMapping("/by-districts")
+    public ResponseEntity<Map<String, Object>> getEmployeesByDistricts(
+            @RequestParam List<Integer> districtIds) {
+        try {
+            List<DropdownOptionDTO> employees =
+                    employeeService.getActiveEmployeesByDistricts(districtIds);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", employees);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to fetch employees by districts: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
+
+
 
 
 

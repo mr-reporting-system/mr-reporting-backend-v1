@@ -2,6 +2,7 @@ package com.mrreporting.backend.service;
 
 import com.mrreporting.backend.dto.ProviderDTO;
 import com.mrreporting.backend.dto.ProviderTransferDTO;
+import com.mrreporting.backend.dto.StockistOptionDTO;
 import com.mrreporting.backend.entity.*;
 import com.mrreporting.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -112,4 +113,20 @@ public class ProviderService {
 
         providerRepository.saveAll(providersToTransfer);
     }
+
+    public List<StockistOptionDTO> getActiveProvidersByEmployees(List<Long> employeeIds) {
+        if (employeeIds == null || employeeIds.isEmpty()) {
+            return List.of();
+        }
+
+        return providerRepository.findByEmployeeIdInAndIsActiveTrueOrderByProviderNameAsc(employeeIds)
+                .stream()
+                .map(provider -> new StockistOptionDTO(
+                        provider.getId(),
+                        provider.getProviderName(),
+                        provider.getType()
+                ))
+                .toList();
+    }
+
 }

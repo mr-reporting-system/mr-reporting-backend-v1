@@ -1,6 +1,7 @@
 package com.mrreporting.backend.service;
 
 import com.mrreporting.backend.dto.ChangeHqDTO;
+import com.mrreporting.backend.dto.DropdownOptionDTO;
 import com.mrreporting.backend.entity.Designation;
 import com.mrreporting.backend.entity.Employee;
 import com.mrreporting.backend.entity.User;
@@ -213,4 +214,20 @@ public class EmployeeService {
         }
         return employeeRepository.findByDesignationIdAndIsActive(designationId, isActive);
     }
+
+    public List<DropdownOptionDTO> getActiveEmployeesByDistricts(List<Integer> districtIds) {
+        if (districtIds == null || districtIds.isEmpty()) {
+            return List.of();
+        }
+
+        return employeeRepository.findByDistrictIdInAndIsActiveTrueOrderByNameAsc(districtIds)
+                .stream()
+                .map(employee -> new DropdownOptionDTO(
+                        employee.getId(),
+                        employee.getName(),
+                        null
+                ))
+                .toList();
+    }
+
 }

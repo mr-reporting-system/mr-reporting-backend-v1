@@ -2,6 +2,7 @@ package com.mrreporting.backend.controller;
 
 import com.mrreporting.backend.dto.ProviderDTO;
 import com.mrreporting.backend.dto.ProviderTransferDTO;
+import com.mrreporting.backend.dto.StockistOptionDTO;
 import com.mrreporting.backend.entity.Provider;
 import com.mrreporting.backend.service.ProviderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,4 +103,23 @@ public class ProviderController {
             return ResponseEntity.badRequest().body(response);
         }
     }
+
+    @GetMapping("/by-employees")
+    public ResponseEntity<Map<String, Object>> getProvidersByEmployees(
+            @RequestParam List<Long> employeeIds) {
+        try {
+            List<StockistOptionDTO> providers = providerService.getActiveProvidersByEmployees(employeeIds);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", providers);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to fetch providers");
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
+
 }
