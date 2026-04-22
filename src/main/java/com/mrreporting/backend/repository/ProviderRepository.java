@@ -63,4 +63,10 @@ public interface ProviderRepository extends JpaRepository<Provider, Long> {
 
     List<Provider> findByEmployeeIdInAndIsActiveTrueOrderByProviderNameAsc(List<Long> employeeIds);
 
+    List<Provider> findByStateIdAndDistrictIdInAndTypeIgnoreCaseAndIsActiveTrueOrderByProviderNameAsc(
+            Integer stateId,
+            List<Integer> districtIds,
+            String type
+    );
 }
+

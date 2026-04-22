@@ -22,27 +22,105 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     List<Employee> findByStateIdInAndDesignationLevelGreaterThan(List<Integer> stateIds, Integer level);
     List<Employee> findByStateIdInAndDesignationIdIn(List<Integer> stateIds, List<Long> designationIds);
     List<Employee> findByDistrictIdInAndDesignationIdIn(List<Integer> districtIds, List<Long> designationIds);
+    List<Employee> findByDistrictIdIn(List<Integer> districtIds);
+    List<Employee> findByDesignationIdAndIsActive(Long designationId, Boolean isActive);
+    List<Employee> findByIdInAndDesignationIdAndIsActive(
+            List<Long> employeeIds,
+            Long designationId,
+            Boolean isActive
+    );
+    List<Employee> findByDistrictIdInAndIsActiveTrueOrderByNameAsc(List<Integer> districtIds);
+
+    List<Employee> findByStateIdAndDistrictIdInAndIsActiveTrueOrderByNameAsc(
+            Integer stateId,
+            List<Integer> districtIds
+    );
 
     @Query("SELECT DISTINCT e FROM Employee e WHERE e.designation.name = 'MR' " +
             "AND e.reportingManager IS NOT NULL " +
             "AND (e.id IN :employeeIds OR e.reportingManager.id IN :employeeIds)")
     List<Employee> findMRsByEmployeeOrManagerIds(@Param("employeeIds") List<Long> employeeIds);
 
-    // fetch employees in the given districts, used for geographical tour program filter
-    List<Employee> findByDistrictIdIn(List<Integer> districtIds);
-
-    // fetch employees by designation filtered by active status.
-    // used to populate the employee dropdown in the hierarchical tour program filter.
-    List<Employee> findByDesignationIdAndIsActive(Long designationId, Boolean isActive);
-
-    // fetch specific employees by ids, designation and status.
-    // used when admin selects specific employees in hierarchical mode.
-    List<Employee> findByIdInAndDesignationIdAndIsActive(
-            List<Long> employeeIds,
-            Long designationId,
-            Boolean isActive
+    @Query("""
+        SELECT e
+        FROM Employee e
+        JOIN e.designation d
+        WHERE e.state.id = :stateId
+          AND e.district.id = :districtId
+          AND e.isActive = true
+          AND UPPER(d.name) = 'MR'
+        ORDER BY e.name ASC
+        """)
+    List<Employee> findActiveMrEmployeesByLocation(
+            @Param("stateId") Integer stateId,
+            @Param("districtId") Integer districtId
     );
 
-    List<Employee> findByDistrictIdInAndIsActiveTrueOrderByNameAsc(List<Integer> districtIds);
+    @Query("""
+        SELECT DISTINCT e
+        FROM Employee e
+        JOIN e.designation d
+        WHERE e.id IN :employeeIds
+          AND e.isActive = true
+          AND UPPER(d.name) = 'MR'
+        """)
+    List<Employee> findActiveMrEmployeesByIds(
+            @Param("employeeIds") List<Long> employeeIds
+    );
+
+    @Query("""
+    SELECT DISTINCT e
+    FROM Employee e
+    JOIN e.designation d
+    WHERE e.isActive = true
+      AND UPPER(d.name) = 'MR'
+      AND (:skipStateFilter = true OR e.state.id IN :stateIds)
+      AND (:skipDistrictFilter = true OR e.district.id IN :districtIds)
+      AND (:skipEmployeeFilter = true OR e.id IN :employeeIds)
+    ORDER BY e.name ASC
+    """)
+    List<Employee> findActiveMrEmployeesForTargetReport(
+            @Param("skipStateFilter") boolean skipStateFilter,
+            @Param("stateIds") List<Integer> stateIds,
+            @Param("skipDistrictFilter") boolean skipDistrictFilter,
+            @Param("districtIds") List<Integer> districtIds,
+            @Param("skipEmployeeFilter") boolean skipEmployeeFilter,
+            @Param("employeeIds") List<Long> employeeIds
+    );
+
+    @Query("""
+        SELECT DISTINCT e
+        FROM Employee e
+        LEFT JOIN e.reportingManager rm
+        WHERE (:isActive IS NULL OR e.isActive = :isActive)
+          AND (:skipStateFilter = true OR e.state.id IN :stateIds)
+          AND (:skipDistrictFilter = true OR e.district.id IN :districtIds)
+        ORDER BY e.name ASC
+        """)
+    List<Employee> findEmployeesForDcrConsolidateGeographical(
+            @Param("isActive") Boolean isActive,
+            @Param("skipStateFilter") boolean skipStateFilter,
+            @Param("stateIds") List<Integer> stateIds,
+            @Param("skipDistrictFilter") boolean skipDistrictFilter,
+            @Param("districtIds") List<Integer> districtIds
+    );
+
+    @Query("""
+        SELECT DISTINCT e
+        FROM Employee e
+        JOIN e.reportingManager rm
+        WHERE (:isActive IS NULL OR e.isActive = :isActive)
+          AND (:skipStateFilter = true OR rm.state.id IN :stateIds)
+          AND (:skipDistrictFilter = true OR rm.district.id IN :districtIds)
+        ORDER BY e.name ASC
+        """)
+    List<Employee> findEmployeesForDcrConsolidateHierarchical(
+            @Param("isActive") Boolean isActive,
+            @Param("skipStateFilter") boolean skipStateFilter,
+            @Param("stateIds") List<Integer> stateIds,
+            @Param("skipDistrictFilter") boolean skipDistrictFilter,
+            @Param("districtIds") List<Integer> districtIds
+    );
+
 
 }
