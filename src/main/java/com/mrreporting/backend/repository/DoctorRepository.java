@@ -25,6 +25,8 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     // Only fetch approved doctors for a specific area
     List<Doctor> findByAreaIdAndIsActiveTrue(Long areaId);
 
+    List<Doctor> findByEmployeeIdAndIsActiveTrueOrderByDoctorNameAsc(Long employeeId);
+
     // Counts pending Doctor additions
     long countByIsActiveFalseAndRequestStatus(String requestStatus);
 

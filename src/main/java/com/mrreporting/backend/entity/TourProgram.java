@@ -46,6 +46,9 @@ public class TourProgram {
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
+    @Column(name = "approved_by_name")
+    private String approvedByName;
+
     // populated when admin rejects the plan
     @Column(name = "rejection_message", columnDefinition = "TEXT")
     private String rejectionMessage;

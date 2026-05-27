@@ -11,6 +11,8 @@ public class DcrConsolidateFilterDTO {
     private String scopeType;
     private List<Integer> stateIds;
     private List<Integer> districtIds;
+    private List<Long> designationIds;
+    private List<Long> employeeIds;
     private String status;
     private LocalDate fromDate;
     private LocalDate toDate;

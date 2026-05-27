@@ -5,6 +5,8 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(
@@ -32,6 +34,10 @@ public class DcrReportCall {
     @JoinColumn(name = "provider_id")
     private Provider provider;
 
+    @ManyToOne
+    @JoinColumn(name = "joint_work_manager_id")
+    private Employee jointWorkManager;
+
     @Column(name = "call_type", nullable = false, length = 20)
     private String callType;
 
@@ -53,6 +59,15 @@ public class DcrReportCall {
     @Column(columnDefinition = "TEXT")
     private String remark;
 
+    @Column(name = "sort_order")
+    private Integer sortOrder = 0;
+
+    @Column(name = "is_active")
+    private Boolean isActive = true;
+
+    @OneToMany(mappedBy = "dcrReportCall", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DcrReportCallProduct> products = new ArrayList<>();
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -68,5 +83,10 @@ public class DcrReportCall {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public void addProduct(DcrReportCallProduct product) {
+        products.add(product);
+        product.setDcrReportCall(this);
     }
 }

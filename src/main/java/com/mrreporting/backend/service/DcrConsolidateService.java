@@ -28,6 +28,28 @@ public class DcrConsolidateService {
     private DcrReportRepository dcrReportRepository;
 
     @Transactional(readOnly = true)
+    public List<DropdownOptionDTO> getHierarchicalEmployees(
+            List<Long> designationIds,
+            String status
+    ) {
+        List<Employee> employees = employeeRepository.findEmployeesForDcrConsolidateHierarchySelection(
+                parseStatus(status),
+                isEmpty(designationIds),
+                longIdsOrDummy(designationIds),
+                true,
+                List.of(-1L)
+        );
+
+        return employees.stream()
+                .map(employee -> new DropdownOptionDTO(
+                        employee.getId(),
+                        employee.getName(),
+                        employee.getDesignation() != null ? employee.getDesignation().getName() : null
+                ))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public DcrConsolidateResponseDTO getConsolidateSummary(DcrConsolidateFilterDTO dto) {
         validateFilter(dto);
 
@@ -135,14 +157,16 @@ public class DcrConsolidateService {
         Boolean status = parseStatus(dto.getStatus());
         List<Integer> stateIds = dto.getStateIds();
         List<Integer> districtIds = dto.getDistrictIds();
+        List<Long> designationIds = dto.getDesignationIds();
+        List<Long> employeeIds = dto.getEmployeeIds();
 
         if ("HIERARCHICAL".equalsIgnoreCase(dto.getFilterMode())) {
-            return employeeRepository.findEmployeesForDcrConsolidateHierarchical(
+            return employeeRepository.findEmployeesForDcrConsolidateHierarchySelection(
                     status,
-                    isEmpty(stateIds),
-                    intIdsOrDummy(stateIds),
-                    isEmpty(districtIds),
-                    intIdsOrDummy(districtIds)
+                    isEmpty(designationIds),
+                    longIdsOrDummy(designationIds),
+                    isEmpty(employeeIds),
+                    longIdsOrDummy(employeeIds)
             );
         }
 
@@ -212,17 +236,17 @@ public class DcrConsolidateService {
     }
 
     private DcrDateWiseSummaryDTO buildDateWiseSummary(List<DcrReport> reports) {
-        long adminWorkCount = countReportsByStatus(reports, "Admin Work");
-        long meetingCount = countReportsByStatus(reports, "Meeting");
-        long holidayCount = countReportsByStatus(reports, "Holiday");
-        long fieldWorkCount = countReportsByStatus(reports, "Field Work");
-        long leaveCount = countReportsByStatus(reports, "Leave");
-        long lwpCount = countReportsByStatus(reports, "LWP");
-        long conferenceCount = countReportsByStatus(reports, "Conference");
-        long chemistWorkCount = countReportsByStatus(reports, "Chemist Work");
-        long stockistWorkCount = countReportsByStatus(reports, "Stockist Work");
-        long transitCount = countReportsByStatus(reports, "Transit");
-        long otherCount = countReportsByStatus(reports, "Other");
+        long adminWorkCount = countReportsByStatuses(reports, "Admin Work");
+        long meetingCount = countReportsByStatuses(reports, "Meeting");
+        long holidayCount = countReportsByStatuses(reports, "Holiday");
+        long fieldWorkCount = countReportsByStatuses(reports, "Field Work", "Working");
+        long leaveCount = countReportsByStatuses(reports, "Leave");
+        long lwpCount = countReportsByStatuses(reports, "LWP");
+        long conferenceCount = countReportsByStatuses(reports, "Conference");
+        long chemistWorkCount = countReportsByStatuses(reports, "Chemist Work");
+        long stockistWorkCount = countReportsByStatuses(reports, "Stockist Work");
+        long transitCount = countReportsByStatuses(reports, "Transit");
+        long otherCount = countReportsByStatuses(reports, "Other");
 
         List<DcrReportCall> allCalls = reports.stream()
                 .flatMap(report -> safeCalls(report).stream())
@@ -294,9 +318,9 @@ public class DcrConsolidateService {
         );
     }
 
-    private long countReportsByStatus(List<DcrReport> reports, String status) {
+    private long countReportsByStatuses(List<DcrReport> reports, String... statuses) {
         return reports.stream()
-                .filter(report -> status.equalsIgnoreCase(nullSafeString(report.getWorkingStatus())))
+                .filter(report -> matchesAnyStatus(report.getWorkingStatus(), statuses))
                 .count();
     }
 
@@ -343,7 +367,21 @@ public class DcrConsolidateService {
     }
 
     private List<DcrReportCall> safeCalls(DcrReport report) {
-        return report.getCalls() != null ? report.getCalls() : List.of();
+        if (report.getCalls() == null) {
+            return List.of();
+        }
+        return report.getCalls().stream()
+                .filter(call -> !Boolean.FALSE.equals(call.getIsActive()))
+                .toList();
+    }
+
+    private boolean matchesAnyStatus(String value, String... statuses) {
+        for (String status : statuses) {
+            if (status.equalsIgnoreCase(nullSafeString(value))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void validateFilter(DcrConsolidateFilterDTO dto) {
@@ -356,11 +394,15 @@ public class DcrConsolidateService {
         if (dto.getFromDate().isAfter(dto.getToDate())) {
             throw new RuntimeException("fromDate cannot be after toDate.");
         }
+        if ("HIERARCHICAL".equalsIgnoreCase(dto.getFilterMode())) {
+            if (isEmpty(dto.getDesignationIds()) && isEmpty(dto.getEmployeeIds())) {
+                throw new RuntimeException("At least one designation or employee is required for hierarchical mode.");
+            }
+            return;
+        }
+
         if (isEmpty(dto.getStateIds())) {
             throw new RuntimeException("At least one state is required.");
-        }
-        if (isEmpty(dto.getDistrictIds())) {
-            throw new RuntimeException("At least one district is required.");
         }
     }
 
@@ -383,6 +425,10 @@ public class DcrConsolidateService {
 
     private List<Integer> intIdsOrDummy(List<Integer> ids) {
         return isEmpty(ids) ? List.of(-1) : ids;
+    }
+
+    private List<Long> longIdsOrDummy(List<Long> ids) {
+        return isEmpty(ids) ? List.of(-1L) : ids;
     }
 
     private String nullSafeString(String value) {

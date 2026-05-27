@@ -51,6 +51,24 @@ public class Stp {
     @Column(name = "request_status")
     private String requestStatus = "PENDING";
 
+    @Column(name = "manager_approved")
+    private Boolean managerApproved = false;
+
+    @Column(name = "manager_approved_at")
+    private LocalDateTime managerApprovedAt;
+
+    @Column(name = "manager_approved_by_name")
+    private String managerApprovedByName;
+
+    @Column(name = "admin_approved")
+    private Boolean adminApproved = false;
+
+    @Column(name = "admin_approved_at")
+    private LocalDateTime adminApprovedAt;
+
+    @Column(name = "admin_approved_by_name")
+    private String adminApprovedByName;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

@@ -9,9 +9,14 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DcrReportRepository extends JpaRepository<DcrReport, Long> {
+
+    boolean existsByEmployeeIdAndReportDate(Long employeeId, LocalDate reportDate);
+
+    Optional<DcrReport> findByEmployeeIdAndReportDate(Long employeeId, LocalDate reportDate);
 
     @EntityGraph(attributePaths = {"calls"})
     @Query("""

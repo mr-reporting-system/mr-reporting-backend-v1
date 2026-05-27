@@ -3,10 +3,15 @@ package com.mrreporting.backend.service;
 import com.mrreporting.backend.dto.StpEmployeeSummaryDTO;
 import com.mrreporting.backend.dto.StpGeographySummaryDTO;
 import com.mrreporting.backend.dto.StpRouteDetailDTO;
+import com.mrreporting.backend.entity.Employee;
 import com.mrreporting.backend.entity.Stp;
+import com.mrreporting.backend.entity.User;
+import com.mrreporting.backend.repository.EmployeeRepository;
 import com.mrreporting.backend.repository.StpRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,6 +21,9 @@ public class StpApprovalService {
 
     @Autowired
     private StpRepository stpRepository;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
 
     // -------------------------------------------------------
     // Level 1 — Geography Summary
@@ -74,6 +82,9 @@ public class StpApprovalService {
         pendingStps.forEach(s -> {
             s.setIsActive(true);
             s.setRequestStatus("APPROVED");
+            s.setAdminApproved(true);
+            s.setAdminApprovedAt(java.time.LocalDateTime.now());
+            s.setAdminApprovedByName(resolveApproverName());
         });
 
         stpRepository.saveAll(pendingStps);
@@ -114,5 +125,16 @@ public class StpApprovalService {
         if (ids == null || ids.isEmpty()) {
             throw new IllegalArgumentException("No STP IDs provided to " + action + ".");
         }
+    }
+
+    private String resolveApproverName() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof User currentUser)) {
+            return null;
+        }
+
+        return employeeRepository.findByUserId(currentUser.getId())
+                .map(Employee::getName)
+                .orElse(currentUser.getEmail());
     }
 }

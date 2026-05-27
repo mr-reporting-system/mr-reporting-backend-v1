@@ -25,6 +25,18 @@ public interface AreaRepository extends JpaRepository<Area, Long> {
     @Query("SELECT a FROM Area a WHERE a.isActive = true AND a.employee.id = :employeeId")
     List<Area> findAreasByEmployeeId(@Param("employeeId") Long employeeId);
 
+    List<Area> findByEmployeeIdAndIsActiveTrueOrderByAreaNameAsc(Long employeeId);
+
+    @Query("""
+            SELECT a
+            FROM Area a
+            WHERE a.employee.id = :employeeId
+              AND a.isActive = true
+              AND (a.requestStatus IS NULL OR UPPER(a.requestStatus) <> 'DELETION')
+            ORDER BY a.areaName ASC
+            """)
+    List<Area> findVisibleMrAreasByEmployeeId(@Param("employeeId") Long employeeId);
+
     @Query("SELECT new com.mrreporting.backend.dto.ApprovalSummaryDTO(" +
             "a.state.stateName, a.district.districtName, a.employee.name, a.employee.id, COUNT(a)) " +
             "FROM Area a " +
@@ -44,5 +56,9 @@ public interface AreaRepository extends JpaRepository<Area, Long> {
             Boolean isActive,
             String requestStatus
     );
+
+    boolean existsByAreaCodeIgnoreCase(String areaCode);
+
+    boolean existsByAreaCodeIgnoreCaseAndIdNot(String areaCode, Long id);
 
 }

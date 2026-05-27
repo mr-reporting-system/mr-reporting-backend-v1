@@ -64,3 +64,88 @@ CREATE INDEX IF NOT EXISTS idx_dcr_report_calls_report
 
 CREATE INDEX IF NOT EXISTS idx_dcr_report_calls_type
     ON dcr_report_calls(call_type);
+
+ALTER TABLE IF EXISTS dcr_reports
+    ADD COLUMN IF NOT EXISTS joint_work_manager_id BIGINT,
+    ADD COLUMN IF NOT EXISTS deviate_reason TEXT;
+
+ALTER TABLE IF EXISTS dcr_report_calls
+    ADD COLUMN IF NOT EXISTS joint_work_manager_id BIGINT,
+    ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_dcr_report_calls_active
+    ON dcr_report_calls(is_active);
+
+CREATE TABLE IF NOT EXISTS dcr_report_areas (
+    id BIGSERIAL PRIMARY KEY,
+    dcr_report_id BIGINT NOT NULL,
+    from_area_id BIGINT NOT NULL,
+    to_area_id BIGINT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_dcr_report_areas_report
+        FOREIGN KEY (dcr_report_id) REFERENCES dcr_reports(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dcr_report_areas_from
+        FOREIGN KEY (from_area_id) REFERENCES areas(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_dcr_report_areas_to
+        FOREIGN KEY (to_area_id) REFERENCES areas(id) ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_dcr_report_areas_report
+    ON dcr_report_areas(dcr_report_id);
+
+CREATE TABLE IF NOT EXISTS dcr_report_call_products (
+    id BIGSERIAL PRIMARY KEY,
+    dcr_report_call_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_dcr_report_call_products_call
+        FOREIGN KEY (dcr_report_call_id) REFERENCES dcr_report_calls(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dcr_report_call_products_product
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
+    CONSTRAINT uq_dcr_report_call_products UNIQUE (dcr_report_call_id, product_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_dcr_report_call_products_call
+    ON dcr_report_call_products(dcr_report_call_id);
+
+CREATE TABLE IF NOT EXISTS dcr_report_meetings (
+    id BIGSERIAL PRIMARY KEY,
+    dcr_report_id BIGINT NOT NULL,
+    meeting_with_manager_id BIGINT NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    remark TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_dcr_report_meetings_report
+        FOREIGN KEY (dcr_report_id) REFERENCES dcr_reports(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dcr_report_meetings_manager
+        FOREIGN KEY (meeting_with_manager_id) REFERENCES employees(id) ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_dcr_report_meetings_report
+    ON dcr_report_meetings(dcr_report_id);
+
+CREATE TABLE IF NOT EXISTS dcr_report_expenses (
+    id BIGSERIAL PRIMARY KEY,
+    dcr_report_id BIGINT NOT NULL,
+    expense_type VARCHAR(120) NOT NULL,
+    amount NUMERIC(14, 2) NOT NULL DEFAULT 0,
+    remark TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_dcr_report_expenses_report
+        FOREIGN KEY (dcr_report_id) REFERENCES dcr_reports(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_dcr_report_expenses_report
+    ON dcr_report_expenses(dcr_report_id);

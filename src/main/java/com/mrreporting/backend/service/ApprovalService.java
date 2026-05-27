@@ -36,13 +36,11 @@ public class ApprovalService {
         additions.put("doctor", doctorRepository.countByIsActiveFalseAndRequestStatus("ADDITION"));
         additions.put("provider", providerRepository.countByIsActiveFalseAndRequestStatus("ADDITION"));
 
-        // Deletion Requests (is_active = false, status = 'DELETION')
-        // NOTE: We use is_active=false because AreaService.requestAreaDeletion now sets it to false
+        // Deletion Requests stay active until approval, then move to DELETED.
         Map<String, Long> deletions = new HashMap<>();
-        deletions.put("area", areaRepository.countByIsActiveFalseAndRequestStatus("DELETION"));
-        doctorRepository.countByIsActiveFalseAndRequestStatus("DELETION");
-        deletions.put("doctor", doctorRepository.countByIsActiveFalseAndRequestStatus("DELETION"));
-        deletions.put("provider", providerRepository.countByIsActiveFalseAndRequestStatus("DELETION"));
+        deletions.put("area", areaRepository.countByIsActiveTrueAndRequestStatus("DELETION"));
+        deletions.put("doctor", doctorRepository.countByIsActiveTrueAndRequestStatus("DELETION"));
+        deletions.put("provider", providerRepository.countByIsActiveTrueAndRequestStatus("DELETION"));
 
         Map<String, Long> stp = new HashMap<>();
         stp.put("pending", stpRepository.countByIsActiveFalseAndRequestStatus("PENDING"));
@@ -55,8 +53,7 @@ public class ApprovalService {
     }
 
     public List<ApprovalSummaryDTO> getCategorySummary(String category, String type) {
-        // Now both Addition and Deletion are is_active = false while pending
-        Boolean isActive = false;
+        Boolean isActive = type.equalsIgnoreCase("DELETION");
         String status = type.toUpperCase();
 
         return switch (category.toLowerCase()) {
@@ -68,7 +65,7 @@ public class ApprovalService {
     }
 
     public List<?> getPendingDetails(String category, String type, Long employeeId) {
-        Boolean isActive = false;
+        Boolean isActive = type.equalsIgnoreCase("DELETION");
         String status = type.toUpperCase();
 
         return switch (category.toLowerCase()) {

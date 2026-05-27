@@ -27,6 +27,8 @@ public class AreaService {
 
     @Transactional
     public Area saveArea(AreaDTO areaDTO) {
+        validateUniqueAreaCode(areaDTO.getAreaCode(), null);
+
         Area area = new Area();
         area.setAreaName(areaDTO.getAreaName());
         area.setAreaCode(areaDTO.getAreaCode());
@@ -58,11 +60,14 @@ public class AreaService {
 
     @Transactional
     public Area updateArea(Long id, AreaDTO dto) {
+        validateUniqueAreaCode(dto.getAreaCode(), id);
+
         Area existingArea = areaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Area not found with id: " + id));
 
         existingArea.setAreaName(dto.getAreaName());
         existingArea.setAreaCode(dto.getAreaCode());
+        existingArea.setAreaType(dto.getAreaType());
 
         existingArea.setState(stateRepository.findById(dto.getStateId())
                 .orElseThrow(() -> new RuntimeException("State not found")));
@@ -82,8 +87,7 @@ public class AreaService {
         Area area = areaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Area not found with id: " + id));
 
-        // It stays active (visible) but moves to the "Deletion Requests" table
-        area.setIsActive(false);
+        // Match doctor/provider approval behavior: keep it active but flag it for deletion approval.
         area.setRequestStatus("DELETION");
         areaRepository.save(area);
     }
@@ -114,5 +118,19 @@ public class AreaService {
 
     public List<Area> getAreasForEmployee(Long employeeId) {
         return areaRepository.findAreasByEmployeeId(employeeId);
+    }
+
+    private void validateUniqueAreaCode(String areaCode, Long existingAreaId) {
+        if (areaCode == null || areaCode.isBlank()) {
+            return;
+        }
+
+        boolean duplicateExists = existingAreaId == null
+                ? areaRepository.existsByAreaCodeIgnoreCase(areaCode)
+                : areaRepository.existsByAreaCodeIgnoreCaseAndIdNot(areaCode, existingAreaId);
+
+        if (duplicateExists) {
+            throw new RuntimeException("Area code already exists. Use a different area code, or call the update API for an existing area.");
+        }
     }
 }

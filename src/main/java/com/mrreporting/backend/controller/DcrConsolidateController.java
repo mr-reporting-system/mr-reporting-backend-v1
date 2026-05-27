@@ -3,6 +3,7 @@ package com.mrreporting.backend.controller;
 import com.mrreporting.backend.dto.DcrConsolidateFilterDTO;
 import com.mrreporting.backend.dto.DcrConsolidateResponseDTO;
 import com.mrreporting.backend.dto.DcrDateWiseResponseDTO;
+import com.mrreporting.backend.dto.DropdownOptionDTO;
 import com.mrreporting.backend.service.DcrConsolidateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -20,6 +22,26 @@ public class DcrConsolidateController {
 
     @Autowired
     private DcrConsolidateService dcrConsolidateService;
+
+    @GetMapping("/hierarchical/employees")
+    public ResponseEntity<Map<String, Object>> getHierarchicalEmployees(
+            @RequestParam List<Long> designationIds,
+            @RequestParam(required = false) String status) {
+
+        Map<String, Object> response = new HashMap<>();
+        try {
+            List<DropdownOptionDTO> employees =
+                    dcrConsolidateService.getHierarchicalEmployees(designationIds, status);
+
+            response.put("success", true);
+            response.put("data", employees);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Failed to fetch hierarchical employees: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
 
     @PostMapping("/summary")
     public ResponseEntity<Map<String, Object>> getConsolidateSummary(

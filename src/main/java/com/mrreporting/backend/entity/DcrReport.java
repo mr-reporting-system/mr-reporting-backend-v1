@@ -30,6 +30,10 @@ public class DcrReport {
     @JoinColumn(name = "tour_program_day_id")
     private TourProgramDay tourProgramDay;
 
+    @ManyToOne
+    @JoinColumn(name = "joint_work_manager_id")
+    private Employee jointWorkManager;
+
     @Column(name = "report_date", nullable = false)
     private LocalDate reportDate;
 
@@ -60,6 +64,9 @@ public class DcrReport {
     @Column(name = "is_deviated")
     private Boolean isDeviated = false;
 
+    @Column(name = "deviate_reason", columnDefinition = "TEXT")
+    private String deviateReason;
+
     @Column(name = "joint_work_with", length = 120)
     private String jointWorkWith;
 
@@ -68,6 +75,15 @@ public class DcrReport {
 
     @OneToMany(mappedBy = "dcrReport", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DcrReportCall> calls = new ArrayList<>();
+
+    @OneToMany(mappedBy = "dcrReport", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DcrReportArea> travelAreas = new ArrayList<>();
+
+    @OneToMany(mappedBy = "dcrReport", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DcrReportMeeting> meetings = new ArrayList<>();
+
+    @OneToMany(mappedBy = "dcrReport", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DcrReportExpense> expenses = new ArrayList<>();
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -84,5 +100,25 @@ public class DcrReport {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public void addCall(DcrReportCall call) {
+        calls.add(call);
+        call.setDcrReport(this);
+    }
+
+    public void addTravelArea(DcrReportArea travelArea) {
+        travelAreas.add(travelArea);
+        travelArea.setDcrReport(this);
+    }
+
+    public void addMeeting(DcrReportMeeting meeting) {
+        meetings.add(meeting);
+        meeting.setDcrReport(this);
+    }
+
+    public void addExpense(DcrReportExpense expense) {
+        expenses.add(expense);
+        expense.setDcrReport(this);
     }
 }

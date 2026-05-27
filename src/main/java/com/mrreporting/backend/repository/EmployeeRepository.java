@@ -7,12 +7,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     boolean existsByEmail(String email);
     boolean existsByMobile(String mobile);
+    Optional<Employee> findByUserId(Long userId);
 
     List<Employee> findByDesignationId(Long designationId);
     List<Employee> findByStateIdAndDistrictId(Integer stateId, Integer districtId);
@@ -35,6 +37,17 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
             Integer stateId,
             List<Integer> districtIds
     );
+
+    @Query("""
+        SELECT e
+        FROM Employee e
+        JOIN e.designation d
+        WHERE e.isActive = true
+          AND d.level > 1
+          AND UPPER(d.name) <> 'ADMIN'
+        ORDER BY e.name ASC
+        """)
+    List<Employee> findActiveManagersForDcr();
 
     @Query("SELECT DISTINCT e FROM Employee e WHERE e.designation.name = 'MR' " +
             "AND e.reportingManager IS NOT NULL " +
@@ -120,6 +133,22 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
             @Param("stateIds") List<Integer> stateIds,
             @Param("skipDistrictFilter") boolean skipDistrictFilter,
             @Param("districtIds") List<Integer> districtIds
+    );
+
+    @Query("""
+        SELECT DISTINCT e
+        FROM Employee e
+        WHERE (:isActive IS NULL OR e.isActive = :isActive)
+          AND (:skipDesignationFilter = true OR e.designation.id IN :designationIds)
+          AND (:skipEmployeeFilter = true OR e.id IN :employeeIds)
+        ORDER BY e.name ASC
+        """)
+    List<Employee> findEmployeesForDcrConsolidateHierarchySelection(
+            @Param("isActive") Boolean isActive,
+            @Param("skipDesignationFilter") boolean skipDesignationFilter,
+            @Param("designationIds") List<Long> designationIds,
+            @Param("skipEmployeeFilter") boolean skipEmployeeFilter,
+            @Param("employeeIds") List<Long> employeeIds
     );
 
 

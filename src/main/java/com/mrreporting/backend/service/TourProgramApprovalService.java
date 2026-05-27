@@ -6,11 +6,14 @@ import com.mrreporting.backend.entity.Employee;
 import com.mrreporting.backend.entity.TourProgram;
 import com.mrreporting.backend.entity.TourProgramDay;
 import com.mrreporting.backend.entity.TourProgramDayArea;
+import com.mrreporting.backend.entity.User;
 import com.mrreporting.backend.repository.EmployeeRepository;
 import com.mrreporting.backend.repository.TourProgramDayRepository;
 import com.mrreporting.backend.repository.TourProgramRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -157,6 +160,7 @@ public class TourProgramApprovalService {
 
         tp.setIsApproved(true);
         tp.setApprovedAt(LocalDateTime.now());
+        tp.setApprovedByName(resolveApproverName());
         tp.setRejectionMessage(null);
         tourProgramRepository.save(tp);
     }
@@ -172,8 +176,21 @@ public class TourProgramApprovalService {
         }
 
         tp.setIsApproved(false);
+        tp.setApprovedAt(null);
+        tp.setApprovedByName(null);
         tp.setRejectionMessage(rejectionMessage);
         tourProgramRepository.save(tp);
+    }
+
+    private String resolveApproverName() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof User currentUser)) {
+            return null;
+        }
+
+        return employeeRepository.findByUserId(currentUser.getId())
+                .map(Employee::getName)
+                .orElse(currentUser.getEmail());
     }
 
     // maps a TourProgramDay entity to the DTO used by the calendar detail view.

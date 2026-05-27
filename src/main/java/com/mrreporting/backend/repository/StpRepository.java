@@ -16,6 +16,8 @@ public interface StpRepository extends JpaRepository<Stp, Long> {
     //only returns approved STPs
     List<Stp> findByEmployeeIdAndIsActiveTrue(Long employeeId);
 
+    List<Stp> findByEmployeeIdOrderByCreatedAtDescIdDesc(Long employeeId);
+
     // Level 1 — Geography Summary
     // Groups pending STPs by State + District (HQ)
     @Query("SELECT new com.mrreporting.backend.dto.StpGeographySummaryDTO(" +
